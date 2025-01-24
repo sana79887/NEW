@@ -13,6 +13,33 @@ user_permissions = {}  # Dictionary to store user access status
 user_points = {}  # Store points for each user
 attack_in_progress = False  # Flag to check if an attack is running
 
+# Start command (when a user starts the bot)
+@bot.message_handler(commands=['start'])
+def handle_start(message):
+    user_id = message.from_user.id
+
+    # If the user is the admin, give them full access immediately without checking points
+    if user_id == ADMIN_ID:
+        bot.send_message(message.chat.id, "🎉 Welcome Admin! You have direct access to all commands. You can now use the bot.")
+        user_permissions[user_id] = 'approved'
+        user_points[user_id] = 999  # Admin gets unlimited points (you can set any number)
+        return
+
+    # If the user is not the admin, check if they have points
+    if message.chat.type == 'private':
+        if user_id not in user_points or user_points[user_id] == 0:
+            bot.send_message(message.chat.id, "❗ You can't use this bot until you get points from the admin. Please DM the admin @samy784 to get points.")
+            return
+        else:
+            bot.send_message(message.chat.id, f"🎉 You have {user_points[user_id]} points. To start an attack, send IP, Port, and Duration.\n🙏 Example format: `167.67.25 6296 100`")
+            return
+
+    # If it's a group, grant access and show points
+    if user_id not in user_permissions:
+        user_permissions[user_id] = 'approved'
+        user_points[user_id] = 5  # Default 5 points for new users
+        bot.send_message(message.chat.id, f"🎉 You have been granted access! You have {user_points[user_id]} points. To start an attack, send IP, Port, and Duration.\n🙏 Example format: `167.67.25 6296 100`")
+
 # Handle attack command (IP, Port, Duration) directly in group chat
 @bot.message_handler(func=lambda message: True)
 def handle_attack_command(message):
@@ -20,8 +47,7 @@ def handle_attack_command(message):
     user_id = message.from_user.id
 
     if message.chat.type == 'private':
-        # Ignore private messages unless you want specific functionality here.
-        return
+        return  # Ignore private messages unless you want specific functionality here.
 
     # Check if the message format is correct (IP Port Duration)
     parts = message.text.split()
