@@ -207,4 +207,21 @@ def check_all_points(message):
 
 # Automatic reminder every 10 minutes (Fixed with async/await)
 async def send_10_minute_reminder():
-   
+    while True:
+        await asyncio.sleep(600)  # Wait for 10 minutes (600 seconds)
+        for user_id in user_permissions:
+            bot.send_message(user_id, "⏰ Reminder: Please check your points and available commands!")
+            
+# Run the bot in a separate thread
+def run_bot():
+    bot.polling(none_stop=True, interval=0)
+
+if __name__ == "__main__":
+    # Start the bot in a thread
+    bot_thread = Thread(target=run_bot)
+    bot_thread.start()
+
+    # Start the reminder task
+    loop = asyncio.get_event_loop()
+    loop.create_task(send_10_minute_reminder())
+    loop.run_forever()
