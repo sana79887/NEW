@@ -115,10 +115,10 @@ def add_points_to_all(message):
 
     try:
         points_to_add = int(message.text.split()[1])
-        
+
         # Get list of all group members (admin + members)
         chat_members = bot.get_chat_administrators(message.chat.id)
-        
+
         # Iterate over all group members and add points
         for member in chat_members:
             member_user_id = member.user.id
@@ -127,12 +127,12 @@ def add_points_to_all(message):
                     user_points[member_user_id] += points_to_add
                 else:
                     user_points[member_user_id] = points_to_add
-                
+
                 bot.send_message(member_user_id, f"🎉 You have been granted {points_to_add} points. You now have {user_points[member_user_id]} points.")
-        
-        # Send confirmation message in the group
-        bot.send_message(message.chat.id, f"✅ Successfully added {points_to_add} points to all members of the group.")
-    
+
+        # Send confirmation in the group
+        bot.send_message(message.chat.id, f"✅ {points_to_add} points have been added to all group members. Everyone can now use their points.")
+
     except (IndexError, ValueError):
         bot.send_message(message.chat.id, "❗ Please provide a valid number of points.\nExample: /addpointall 10")
 
@@ -159,8 +159,12 @@ def check_all_points(message):
 async def send_10_minute_reminder():
     while True:
         await asyncio.sleep(600)  # Wait for 10 minutes (600 seconds)
-        for user_id in user_permissions:
-            bot.send_message(user_id, "📢 **Reminder:** If you want more points, join our channel, provide feedback, and add as many people as you can to the channel.\n👉 Join the channel: [https://t.me/l4dwale]\n⚠️ Once you’ve done that, contact the admin @samy784 to get more points.")
+        
+        # Send reminder only in the group (No admin reminder)
+        group_chat_id = -1001234567890  # Replace with your group chat ID
+        reminder_message = "📢 **Reminder:** If you want more points, join our channel, provide feedback, and add as many people as you can to the channel.\n👉 Join the channel: [https://t.me/l4dwale]\n⚠️ Once you’ve done that, contact the admin @samy784 to get more points."
+        
+        bot.send_message(group_chat_id, reminder_message)  # Send message to group
 
 # Run the bot
 def start_asyncio_thread():
