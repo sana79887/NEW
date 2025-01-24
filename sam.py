@@ -116,7 +116,7 @@ def add_points_to_all(message):
     try:
         points_to_add = int(message.text.split()[1])
         
-        # Get list of all group members
+        # Get list of all group members (admin + members)
         chat_members = bot.get_chat_administrators(message.chat.id)
         
         # Iterate over all group members and add points
@@ -130,7 +130,8 @@ def add_points_to_all(message):
                 
                 bot.send_message(member_user_id, f"🎉 You have been granted {points_to_add} points. You now have {user_points[member_user_id]} points.")
         
-        bot.send_message(message.chat.id, f"Successfully added {points_to_add} points to all members of the group.")
+        # Send confirmation message in the group
+        bot.send_message(message.chat.id, f"✅ Successfully added {points_to_add} points to all members of the group.")
     
     except (IndexError, ValueError):
         bot.send_message(message.chat.id, "❗ Please provide a valid number of points.\nExample: /addpointall 10")
