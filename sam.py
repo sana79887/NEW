@@ -52,6 +52,7 @@ def handle_attack_command(message):
     # Check if the message format is correct (IP Port Duration)
     parts = message.text.split()
     if len(parts) != 3:
+        bot.send_message(message.chat.id, "❗ Invalid format. Correct format: `IP Port Duration`. Example: `167.67.25 6296 100`")
         return  # If the message format is not correct, do nothing
     
     # Ensure the user has permission (points) to start an attack
@@ -65,6 +66,7 @@ def handle_attack_command(message):
         target_port = int(target_port)
         duration = int(duration)
     except ValueError:
+        bot.send_message(message.chat.id, "❗ Invalid port or duration. Both should be numbers.")
         return  # If invalid port or duration, do nothing
 
     if attack_in_progress:
@@ -205,18 +207,4 @@ def check_all_points(message):
 
 # Automatic reminder every 10 minutes (Fixed with async/await)
 async def send_10_minute_reminder():
-    while True:
-        await asyncio.sleep(600)  # Wait for 10 minutes (600 seconds)
-        for user_id in user_permissions:
-            bot.send_message(user_id, "📢 **Reminder:** If you want more points, join our channel, provide feedback, and add as many people as you can to the channel.\n👉 Join the channel: [https://t.me/l4dwale]\n⚠️ Once you’ve done that, contact the admin @samy784 to get more points.")
-
-# Run the bot
-def start_asyncio_thread():
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    loop.create_task(send_10_minute_reminder())  # Create the task for sending reminders
-    loop.run_forever()
-
-if __name__ == '__main__':
-    Thread(target=start_asyncio_thread).start()
-    bot.infinity_polling()
+   
