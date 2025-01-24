@@ -26,7 +26,6 @@ def handle_start(message):
             bot.send_message(message.chat.id, f"🎉 You have {user_points[user_id]} points. To start an attack, send IP, Port, and Duration.\n🙏 Example format: `167.67.25 6296 100`")
             return
 
-    # If it's a group, grant access and show points
     if user_id not in user_permissions:
         user_permissions[user_id] = 'approved'
         user_points[user_id] = 5  # Default 5 points for new users
@@ -114,23 +113,23 @@ def add_points_to_all(message):
         return
 
     try:
-        points_to_add = int(message.text.split()[1])
+        parts = message.text.split()
+        
+        if len(parts) != 2:  # Ensure that only 2 parts are provided (command and points)
+            bot.send_message(message.chat.id, "❗ Invalid command format. Correct format: /addpointall <points>")
+            return
+        
+        points_to_add = int(parts[1])  # Points to add to all users
 
-        # Get list of all group members (admin + members)
-        chat_members = bot.get_chat_administrators(message.chat.id)
-
-        # Iterate over all group members and add points
-        for member in chat_members:
-            member_user_id = member.user.id
-            if member_user_id != ADMIN_ID:  # Avoid giving points to the admin themselves
-                if member_user_id in user_points:
-                    user_points[member_user_id] += points_to_add
-                else:
-                    user_points[member_user_id] = points_to_add
-
-                bot.send_message(member_user_id, f"🎉 You have been granted {points_to_add} points. You now have {user_points[member_user_id]} points.")
-
-        # Send confirmation in the group
+        # Iterate over all users in user_permissions and add points
+        for user in user_permissions:
+            if user in user_points:
+                user_points[user] += points_to_add
+            else:
+                user_points[user] = points_to_add
+            bot.send_message(user, f"🎉 You have been granted {points_to_add} points. You now have {user_points[user]} points.")
+        
+        # Confirmation message in the group
         bot.send_message(message.chat.id, f"✅ {points_to_add} points have been added to all group members. Everyone can now use their points.")
 
     except (IndexError, ValueError):
@@ -159,12 +158,8 @@ def check_all_points(message):
 async def send_10_minute_reminder():
     while True:
         await asyncio.sleep(600)  # Wait for 10 minutes (600 seconds)
-        
-        # Send reminder only in the group (No admin reminder)
-        group_chat_id = -1001234567890  # Replace with your group chat ID
-        reminder_message = "📢 **Reminder:** If you want more points, join our channel, provide feedback, and add as many people as you can to the channel.\n👉 Join the channel: [https://t.me/l4dwale]\n⚠️ Once you’ve done that, contact the admin @samy784 to get more points."
-        
-        bot.send_message(group_chat_id, reminder_message)  # Send message to group
+        for user_id in user_permissions:
+            bot.send_message(user_id, "📢 **Reminder:** If you want more points, join our channel, provide feedback, and add as many people as you can to the channel.\n👉 Join the channel: [https://t.me/l4dwale]\n⚠️ Once you’ve done that, contact the admin @samy784 to get more points.")
 
 # Run the bot
 def start_asyncio_thread():
